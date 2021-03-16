@@ -1,8 +1,8 @@
 /* eslint-disable eqeqeq */
 const express = require('express');
 const AuthService = require('../middleware/auth-service');
-const { requireAuth } = require("../middleware/jwt-auth");
-const UserValService = require('../Services/user-validation-service');
+const { requireAuth } = require('../middleware/jwt-auth');
+const UserValService = require('../middleware/user-validation-service');
 
 const registerRouter = express.Router();
 
@@ -19,7 +19,7 @@ registerRouter
 
 registerRouter
   .route('/register')
-  .post((req, res, next) => {
+  .post(async (req, res, next) => {
     const { full_name, user_name, password, is_admin, is_provider } = req.body;
     const regUser = { full_name, user_name, password, is_admin, is_provider };
 
@@ -37,19 +37,17 @@ registerRouter
       return res.status(400).json({ error: passwordError});
     }
     
-    return AuthService.getUserWithUserName(
-      req.app.get('db'),
-      regUser.user_name
-    ).then(user => {
+    try {
+      const user = await AuthService.getUserWithUserName(regUser.user_name);
+
       if (user) {
         return res.status(400).json({
           error: 'User name not available'
         });
       } 
 
-      return AuthService.createUser(
-        req.app.get('db'), regUser
-      ).then(newUser => {
+      const newUser = await AuthService.createUser(regUser);
+
         if (!newUser) {
           return res.status(400).json({
             error: 'User not created, please try again'
@@ -58,8 +56,8 @@ registerRouter
 
         delete newUser.password;
         return res.status(201).send(newUser);
-      });
-    }).catch(next);
+        
+    } catch(e) {next(e)};
   });
 
 module.exports = registerRouter;

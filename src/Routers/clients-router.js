@@ -1,8 +1,11 @@
 const express = require("express");
 const checkRestrictedAccess = require("../middleware/restricted-access");
 const { requireAuth } = require("../middleware/jwt-auth");
-const UserService = require("../Services/user-service");
-const ClientMgmtService = require("../Services/client-mgmt-service");
+const xss = require("xss");
+
+const Exercise = require('../models/exercise.model');
+const UserExercise = require("../models/user-exercise.model");
+const User = require("../models/user.model");
 
 const clientsRouter = express.Router();
 
@@ -14,7 +17,9 @@ clientsRouter
   .route('/')
   .get(async (req, res, next) => {
     try {
-      const clients = await UserService.getAllClients(req.app.get('db'));
+      const clients = await User.find({ 
+        is_admin: false, is_provider: false 
+      }).lean();
 
       let clientsToSend = clients.map(el => {
         const { password, ...rest } = el;
@@ -31,12 +36,10 @@ clientsRouter
   .route('/:client_id')
   .get(async (req, res, next) => {
     const { client_id } = req.params;
-    const db = req.app.get('db');
 
     try {
-      const client = await UserService.getUser(db, client_id);
-      const clientExercises = await ClientMgmtService.getAllUserExercises(db, client_id);
-      const clientGoal = await ClientMgmtService.getUserGoal(db, client_id);
+      const client = await User.findOne({ _id: client_id }).lean();
+      const clientExercises = await UserExercise.find({user_id : client_id}).populate('exercise').lean();
 
       if (!client) return res.status(404).json({
         error: 'client not found'
@@ -47,7 +50,7 @@ clientsRouter
 
       else {
         const { password, ...rest } = client;
-        return res.status(200).json({ client : rest, clientExercises, clientGoal });
+        return res.status(200).json({ client : rest, clientExercises });
       }
     }
     catch(error) { next(error); };

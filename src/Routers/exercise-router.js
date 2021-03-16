@@ -1,11 +1,11 @@
 const express = require("express");
-const ExerciseService = require("../Services/exercise-service");
 const checkRestrictedAccess = require("../middleware/restricted-access");
 const { requireAuth } = require("../middleware/jwt-auth");
-const ClientMgmtService = require("../Services/client-mgmt-service");
 const xss = require("xss");
 
-const Exercises = require('../models/exercises')
+const Exercise = require('../models/exercise.model');
+const UserExercise = require("../models/user-exercise.model");
+const User = require("../models/user.model");
 
 const exercisesRouter = express.Router();
 
@@ -15,69 +15,27 @@ exercisesRouter
 exercisesRouter
   .route('/')
   .get(async (req, res, next) => {
-    const { is_admin, is_provider, id } = req.user;
+    const { is_admin, is_provider, _id } = req.user;
+    
+    try {
+    let exercises = is_admin || is_provider 
+    ? await Exercise.find() 
+    : await UserExercise.find({user_id : _id}).populate('exercise').lean();
 
-    Exercises.find({}, (err, companies) => {
-      if (err) { next(err) }
-      else return res.status(200).json(exercises)
-     }
-    )
-  }
+    if (!exercises) return res.status(404).json({ error: 'Exercise not found'});
 
-    // try {
-    //   let exc = [];
+    if (!is_admin || !is_provider) {
+      const goal = await User.find({_id}).distinct('user_goal').then(([g]) => g);
+      exercises = exercises.map(el => {
+        const {imgurl, videourl, exercise_name} = el.exercise;
+        return {...el, exercise_name, imgurl, videourl}
+      })
+      exercises = await { goal, exercises };
+    }
+    
+    return await res.status(200).json(exercises)
+      } catch (err) { next(err) }
 
-    //   if (is_admin || is_provider) {
-    //     let exercises = await ExerciseService
-    //       .getAllExercises(req.app.get('db'));
-
-    //     exercises = exercises.map(el => {
-    //       return {
-    //         ...el, 
-    //         imgurl: xss(el.imgurl), 
-    //         videourl: xss(el.videourl)};
-    //     });
-        
-    //     // merge our categories into an array for each exercise
-    //     exercises.forEach((e, idx) => {
-    //       if (exercises[idx - 1]
-    //         && exercises[idx - 1].id === e.id) {
-    //         let len = exc.length - 1;
-    //         exc[len] = {
-    //           ...exc[len],
-    //           body_part: 
-    //             typeof exc[len].body_part !== 'string' 
-    //               ? [e.body_part, ...exc[len].body_part] 
-    //               : [e.body_part, exc[len].body_part]
-    //         };
-    //       }
-    //       else exc.push(e);
-    //     });
-    //   }
-
-    //   else {
-    //     exc = await ClientMgmtService
-    //       .getAllUserExercises(req.app.get('db'), id);
-    //     const goal = await ClientMgmtService.getUserGoal(req.app.get('db'), id);
-
-    //     exc = exc.map(el => {
-    //       return {
-    //         ...el, 
-    //         imgurl: xss(el.imgurl), 
-    //         videourl: xss(el.videourl)};
-    //     });
-
-    //     exc = {exercises: exc, goal};
-    //   }
-
-    //   if (!exc) return res.status(400).json({
-    //     error: 'Exercises not found'
-    //   });
-    //   else return res.status(200).json(exc);
-    // }
-    // catch (error) {
-    //   next(error);
-    // }
   })
   .post(checkRestrictedAccess, async (req, res, next) => {
     const { exercise_name, imgurl, videourl } = req.body;
@@ -92,7 +50,7 @@ exercisesRouter
     }
 
     try {
-      const newE = await ExerciseService.createExercise(req.app.get('db'), newExercise);
+      const newE = await Exercise.insertMany(newExercise).then(([e]) => e);
 
       if (!newE) return res.status(400).json({
         error: 'Exercise not created! Please try again.'
@@ -102,52 +60,63 @@ exercisesRouter
     catch(error) { next(error); }
   });
 
+const checkExId = (req, res, next) => {
+  const { ex_id } = req.params;
+  if (ex_id.length !== 12 && ex_id.length !==24) 
+    return res.status(404).json({ error: 'Exercise not found' });
+  next();
+}
+
 exercisesRouter
   .route('/:ex_id')
-  .get(async (req, res, next) => {
-    const { is_admin, is_provider, id } = req.user;
+  .get(checkExId, async (req, res, next) => {
+
+    const { is_admin, is_provider, _id } = req.user;
     const { ex_id } = req.params;
-    let exercise;
 
     try {
-      if (is_admin || is_provider) {
-        exercise = await ExerciseService.getExercise(req.app.get('db'), ex_id);
-      }
-      else {
-        exercise = await ClientMgmtService.getUserExercise(req.app.get('db'), ex_id, id);
+      let exercise = is_admin || is_provider 
+      ? await Exercise.findOne({_id: ex_id}) 
+      : await UserExercise.findOne({user_id : _id, exercise: ex_id}).populate('exercise').lean();
+
+      if (!exercise) return res.status(404).json({error: 'Exercise not found'});
+
+      if (!is_admin && !is_provider) {
+        const {exercise_name, imgurl, videourl} = exercise.exercise;
+        exercise = {...exercise, exercise_name, imgurl, videourl}
       }
 
-      if (!exercise) return res.status(404).json({
-        error: 'Exercise not found'
-      });
-      else return res.status(200).json({...exercise, imgurl: xss(exercise.imgurl), videourl: xss(exercise.videourl)});
+      return res.status(200).json({...exercise, imgurl: xss(exercise.imgurl), videourl: xss(exercise.videourl)});
     }
     catch (error) { next(error); }
   })
-  .patch(checkRestrictedAccess, async (req, res, next) => {
+  .patch(checkRestrictedAccess, checkExId, async (req, res, next) => {
     const { ex_id } = req.params;
     const newData = req.body;
 
     try {
-      const updated = await ExerciseService.updateExercise(req.app.get('db'), ex_id, newData);
+      const updated = await Exercise.updateOne({_id: ex_id}, (newData));
       
-      if (!updated) return res.status(404).json({
+      if (!updated.n) return res.status(404).json({
         error: 'Exercise not found'
       });
-      else return res.status(201).json(updated);
+      else {
+        const updatedEx = await Exercise.findOne({_id: ex_id});
+        return res.status(201).json(updatedEx);
+      }
     }
     catch (error) { next(error); };
   })
-  .delete(checkRestrictedAccess, async (req, res, next) => {
+  .delete(checkRestrictedAccess, checkExId, async (req, res, next) => {
     const { ex_id } = req.params;
 
     try {
-      const ex = await ExerciseService.getExercise(req.app.get('db'), ex_id);
+      const ex = await Exercise.findOne({_id: ex_id});
       if (!ex) return res.status(404).json({
         error: 'Exercise not found'
       });
 
-      const deleted = await ExerciseService.deleteExercise(req.app.get('db'), ex.id);
+      const deleted = await Exercise.deleteOne({_id: ex._id});
       if (!deleted) return res.status(400).json({
         error: 'Exercise not deleted'
       });

@@ -1,19 +1,17 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET, JWT_EXPIRY } = require('../config');
+const User = require('../models/user.model');
 
 const AuthService = {
-  createUser(db, newUser) {
+  createUser: async (newUser) => {
     newUser.password = bcrypt.hashSync(newUser.password, 1);
-    return db('users')
-      .insert(newUser)
-      .returning('*')
+    return await User.insertMany(newUser)
       .then(([user]) => user);
   },
-  getUserWithUserName(db, user_name) {
-    return db('users')
-      .where({ user_name })
-      .first();
+  getUserWithUserName: async (user_name) => {
+    return await User.find({user_name})
+    .then(([user]) => user);
   },
   deleteUser(db, id) {
     return db('users')

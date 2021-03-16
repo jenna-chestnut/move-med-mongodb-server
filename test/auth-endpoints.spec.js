@@ -1,53 +1,31 @@
-/* eslint-disable no-undef */
-const knex = require("knex");
-const supertest = require("supertest");
-const app = require("../src/app");
+// /* eslint-disable no-undef */
+const supertest = require('supertest');
+const app = require('../src/app');
+const { TEST_ATLAS_URI } = process.env;
+const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
+const seedTestTables = require('./fixtures/seedTestTables');
 const { JWT_SECRET, JWT_EXPIRY } = require('../src/config');
-const Fixtures = require("./fixtures/action.fixtures");
+const Actions = require('./fixtures/action.fixtures');
+const Content = require('./fixtures/dbcontent.fixtures');
+
 
 describe('/login and /register endpoints', () => {
-  let db;
-
-  const {
-    testUsers,
-    testExercises,
-    testUserExercises,
-    testComments,
-    testCats,
-    testExerciseCats,
-    testUserGoals
-  } = Fixtures.makeFixtures();
-
-  before('make knex instance', () => {
-    db = knex({
-      client: 'pg',
-      connection: process.env.TEST_DATABASE_URL,
+  before('connect to db', () => {
+    mongoose.connect(TEST_ATLAS_URI, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+    const { connection } = mongoose;
+    connection.once('open', () => {
+      console.log('MongoDB database connected successfully');
     });
-    app.set('db', db);
   });
 
-  after('disconnect from db', () => db.destroy());
+  after('disconnect from db', () => mongoose.connection.close());
 
-  before('cleanup', () => Fixtures.cleanTables(db));
-
-  beforeEach('insert things', () =>
-    Fixtures.seedTables(
-      db,
-      testUsers,
-      testExercises,
-      testUserExercises,
-      testComments,
-      testUserGoals,
-      testCats,
-      testExerciseCats
-    )
-  );
-
-  afterEach('cleanup', () => Fixtures.cleanTables(db));
+  const testUsers = Content.makeUsersArr();
 
   describe('POST api/auth/login Endpoint', () =>{
     const requiredFields = ['user_name', 'password'];
+    before('seed tables', () => seedTestTables());
 
     requiredFields.forEach(field => {
       const loginAttemptBody = {
@@ -87,7 +65,7 @@ describe('/login and /register endpoints', () => {
   
       const expectedToken = jwt.sign(
         { 
-          user_id: testUsers[0].id,
+          user_id: testUsers[0]._id,
           name: testUsers[0].full_name,
           is_admin: testUsers[0].is_admin,
           is_provider: testUsers[0].is_provider 
@@ -109,20 +87,22 @@ describe('/login and /register endpoints', () => {
     });
   });
 
-  describe('POST api/auth/register Endpoint', () =>{
-    const requiredFields = ['full_name', 'user_name', 'password', 'is_admin', 'is_provider'];
+  describe('POST api/auth/register Endpoint', () => {
+    const requiredFields = ['user_name', 'full_name', 'password', 'is_admin', 'is_provider'];
 
 
-    describe('api/auth/register validation', () => {
+    describe('api/auth/register validation', async () => {
+      await before('seed tables', () => seedTestTables());
+
       requiredFields.forEach(field => {
-        const regAttemptBody = Fixtures.makeNewUser();
+        const regAttemptBody = Actions.makeNewUser();
     
         it(`responds with 400 required error when ${field} is missing`, () => {
           delete regAttemptBody[field];
     
           return supertest(app)
             .post('/api/auth/register')
-            .set('Authorization', Fixtures.makeAuthHeader(testUsers[0]))
+            .set('Authorization', Actions.makeAuthHeader(testUsers[0]))
             .send(regAttemptBody)
             .expect(400, {
               error: `Missing '${field}' in request body`
@@ -130,52 +110,52 @@ describe('/login and /register endpoints', () => {
         });
       });
   
-      it(`responds with 400 'User name not available' when username already exists`, () => {
-        const badUserReg = Fixtures.makeNewUser();
+      it('responds with 400 \'User name not available\' when username already exists', () => {
+        const badUserReg = Actions.makeNewUser();
         badUserReg.user_name = testUsers[0].user_name;
   
         return supertest(app)
           .post('/api/auth/register')
-          .set('Authorization', Fixtures.makeAuthHeader(testUsers[0]))
+          .set('Authorization', Actions.makeAuthHeader(testUsers[0]))
           .send(badUserReg)
           .expect(400, {
             error: 'User name not available'
           });
       });
   
-      it(`responds with 400 'Password must be longer than 8 characters' when password less than 8 characters`, () => {
-        const shortPw = Fixtures.makeNewUser();
+      it('responds with 400 \'Password must be longer than 8 characters\' when password less than 8 characters', () => {
+        const shortPw = Actions.makeNewUser();
         shortPw.password = 'short';
   
         return supertest(app)
           .post('/api/auth/register')
-          .set('Authorization', Fixtures.makeAuthHeader(testUsers[0]))
+          .set('Authorization', Actions.makeAuthHeader(testUsers[0]))
           .send(shortPw)
           .expect(400, {
             error: 'Password must be longer than 8 characters'
           });
       });
   
-      it(`responds with 400 'Password must be shorter than 72 characters' when password more than 72 characters`, () => {
-        const longPw = Fixtures.makeNewUser();
+      it('responds with 400 \'Password must be shorter than 72 characters\' when password more than 72 characters', () => {
+        const longPw = Actions.makeNewUser();
         longPw.password = '*'.repeat(73);
   
         return supertest(app)
           .post('/api/auth/register')
-          .set('Authorization', Fixtures.makeAuthHeader(testUsers[0]))
+          .set('Authorization', Actions.makeAuthHeader(testUsers[0]))
           .send(longPw)
           .expect(400, {
             error: 'Password must be less than 72 characters'
           });
       });
   
-      it(`responds with 400 'Password must not start or end with empty spaces' when password has spaces at beginning or end`, () => {
-        const spaceyPw = Fixtures.makeNewUser();
+      it('responds with 400 \'Password must not start or end with empty spaces\' when password has spaces at beginning or end', () => {
+        const spaceyPw = Actions.makeNewUser();
         spaceyPw.password = ' aP@ssw0rd!';
   
         return supertest(app)
           .post('/api/auth/register')
-          .set('Authorization', Fixtures.makeAuthHeader(testUsers[0]))
+          .set('Authorization', Actions.makeAuthHeader(testUsers[0]))
           .send(spaceyPw)
           .expect(400, {
             error: 'Password must not start or end with empty spaces'
@@ -184,7 +164,7 @@ describe('/login and /register endpoints', () => {
             spaceyPw.password = 'aP@ssw0rd! ';
             return supertest(app)
               .post('/api/auth/register')
-              .set('Authorization', Fixtures.makeAuthHeader(testUsers[0]))
+              .set('Authorization', Actions.makeAuthHeader(testUsers[0]))
               .send(spaceyPw)
               .expect(400, {
                 error: 'Password must not start or end with empty spaces'
@@ -193,37 +173,23 @@ describe('/login and /register endpoints', () => {
       });
     });
   
-    it('when valid credentials, creates new user in users_table, then responds 201', () => {
-      const newUser = Fixtures.makeNewUser();
+    describe('successful registration', () => {
+      it('when valid credentials, creates new user in users_table, then responds 201', async () => {
+        await before('seed tables', () => seedTestTables());
+        const newUser = Actions.makeNewUser();
   
-      const expectedToken = jwt.sign(
-        { 
-          user_id: newUser.id,
-          name: newUser.full_name,
-          is_admin: newUser.is_admin,
-          is_provider: newUser.is_provider 
-        }, //payload
-        JWT_SECRET,
-        {
-          subject: newUser.user_name,
-          expiresIn: JWT_EXPIRY,
-          algorithm: 'HS256'
-        }
-      );
-  
-      return supertest(app)
-        .post('/api/auth/register')
-        .set('Authorization', Fixtures.makeAuthHeader(testUsers[0]))
-        .send(newUser)
-        .expect(201)
-        .then(() => {
+        return supertest(app)
+          .post('/api/auth/register')
+          .set('Authorization', Actions.makeAuthHeader(testUsers[0]))
+          .send(newUser)
+          .expect(201)
+          .then(() => {
           return supertest(app)
             .post('/api/auth/login')
             .send(newUser)
-            .expect(200, {
-              authToken: expectedToken
-            });
+            .expect(200);
         });
+      });
     });
   });
 });

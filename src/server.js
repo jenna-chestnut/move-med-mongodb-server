@@ -1,14 +1,15 @@
-const app = require("./app");
-const { PORT, DATABASE_URL } = require("./config");
-const knex = require('knex');
+require('dotenv').config();
+const app = require('./app');
+const { PORT, ATLAS_URI } = require('./config');
+const mongoose = require('mongoose');
 
-const db = knex({
-  client: 'pg',
-  connection: DATABASE_URL
+mongoose.connect(ATLAS_URI, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+const { connection } = mongoose;
+connection.once('open', () => {
+  console.log('MongoDB database connected successfully');
 });
-
-app.set('db', db);
 
 app.listen(PORT, () => {
-  console.log(`Express server is listening at http://localhost:${PORT}`);
+  console.log(`Express server is running on port: ${PORT}`);
 });
+
