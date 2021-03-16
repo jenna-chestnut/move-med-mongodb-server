@@ -37,7 +37,7 @@ const makeNewExercise = () => {
 const makeNewComment = () => {
   return {
     comment_text: 'Feeling AMAZING after this exercise!', 
-    user_exercise_id: userEx[0]._id
+    user_exercise: userEx[0]._id
   };
 };
 

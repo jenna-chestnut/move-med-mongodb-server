@@ -201,6 +201,7 @@ const makeUserExercisesArr = () => {
 
 const makeComments = () => {
   return [{
+    _id: '6050bb32a047a371b448d5e3',
     comment_text: 'Started to ache after nth rep', 
     user_exercise: '60467d7375d2cd48b1aad720', 
     user_id: '604678e5852243bcc80b3558'

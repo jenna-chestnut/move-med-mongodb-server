@@ -1,8 +1,10 @@
 const express = require("express");
 const xss = require("xss");
 const { requireAuth } = require("../middleware/jwt-auth");
-const ClientMgmtService = require("../Services/client-mgmt-service");
-const CommentsService = require("../Services/comments-service");
+
+const UserExercise = require("../models/user-exercise.model");
+const Comment = require("../models/comment.model");
+const User = require("../models/user.model");
 
 const commentsRouter = express.Router();
 
@@ -10,16 +12,19 @@ commentsRouter
   .use(requireAuth);
 
 const checkUserEx = async (req, res, next) => {
-  const { is_admin, is_provider, id } = req.user;
+  const { is_admin, is_provider, _id } = req.user;
   const { user_ex_id } = req.params;
 
+  if (user_ex_id.length !== 12 && user_ex_id.length !==24) 
+      return res.status(404).json({ error: 'Exercise not found' });
+
   try {
-    const ex = await ClientMgmtService.getUserExercise(req.app.get('db'), user_ex_id, null, true);
+    const ex = await UserExercise.findOne({_id: user_ex_id}).lean();
 
     if (!ex) return res.status(404).json({
       error: 'Exercise not found'
     });
-    else if ( !is_admin && !is_provider && ex.user_id !== id) 
+    else if ( !is_admin && !is_provider && !(ex.user_id == _id)) 
       return res.status(401).json({
         error: 'Unauthorized request'
       });
@@ -33,10 +38,11 @@ const checkUserEx = async (req, res, next) => {
 commentsRouter
   .route('/:user_ex_id')
   .get(checkUserEx, async (req, res, next) => {
-    const { id } = req.userEx;
+    const { _id } = req.userEx;
 
     try {
-      const comments = await CommentsService.getAllComments(req.app.get('db'), id);
+      const comments = await Comment.find({user_exercise: _id}).lean();
+
       const cleanComments = await comments.map(el => {
         return {...el, comment_text: xss(el.comment_text)};
       });
@@ -46,9 +52,9 @@ commentsRouter
     catch (error) { next(error); }
   })
   .post(checkUserEx, async (req, res, next) => {
-    const { id } = req.userEx;
+    const { _id } = req.userEx;
     const { comment_text } = req.body;
-    const newComment = { user_exercise_id:id, user_id:req.user.id, comment_text };
+    const newComment = { user_exercise: _id, user_id: req.user._id, comment_text };
 
     for (const [key, value] of Object.entries(newComment)) {
       if (value == null ) {
@@ -59,7 +65,7 @@ commentsRouter
     }
 
     try {
-      const newC = await CommentsService.createComment(req.app.get('db'), newComment);
+      const newC = await Comment.insertMany(newComment).then(([c]) => c);
 
       if (!newC) return res.status(400).json({
         error: 'Comment not created! Please try again.'
@@ -70,16 +76,19 @@ commentsRouter
   });
 
 const checkUserComment = async (req, res, next) => {
-  const { is_admin, is_provider, id } = req.user;
+  const { is_admin, is_provider, _id } = req.user;
   const { comment_id } = req.params;
+
+  if (comment_id.length !== 12 && comment_id.length !==24) 
+    return res.status(404).json({ error: 'invalid comment id' });
   
   try {
-    const comment = await CommentsService.getComment(req.app.get('db'), comment_id);
+    const comment = await Comment.findOne({_id: comment_id}).lean();
 
     if (!comment) return res.status(404).json({
-      error: 'Exercise not found'
+      error: 'Comment not found'
     });
-    else if ( !is_admin && !is_provider && comment.user_id !== id) 
+    else if ( !is_admin && !is_provider && !(comment.user_id == _id)) 
       return res.status(401).json({
         error: 'Unauthorized request'
       });
@@ -93,24 +102,27 @@ const checkUserComment = async (req, res, next) => {
 commentsRouter
   .route('/:comment_id')
   .patch(checkUserComment, async (req, res, next) => {
-    const { id } = req.comment;
+    const { _id } = req.comment;
     const newData = req.body;
 
     try {
-      const updated = await CommentsService.updateComment(req.app.get('db'), id, newData);
+      const updated = await Comment.updateOne({_id}, (newData));
       
-      if (!updated) return res.status(404).json({
+      if (!updated.n) return res.status(404).json({
         error: 'Comment not updated'
       });
-      else return res.status(201).json(updated);
+      else {
+        const newComment = await Comment.findOne({_id}).lean();
+        res.status(201).json(newComment);
+      } 
     }
     catch (error) { next(error); };
   })
   .delete(checkUserComment, async (req, res, next) => {
-    const { id } = req.comment;
+    const { _id } = req.comment;
 
     try {
-      const deleted = await CommentsService.deleteComment(req.app.get('db'), id);
+      const deleted = await Comment.deleteOne({_id});
       if (!deleted) return res.status(400).json({
         error: 'Comment not deleted'
       });

@@ -3,7 +3,7 @@ const supertest = require('supertest');
 const app = require('../src/app');
 const { TEST_ATLAS_URI } = process.env;
 const mongoose = require('mongoose');
-const { seedTestTables, clearTables } = require('./Fixtures/seedTestTables');
+const { seedTestTables } = require('./Fixtures/seedTestTables');
 const Content = require('./Fixtures/dbcontent.fixtures');
 const Actions = require('./Fixtures/action.fixtures');
 
@@ -23,6 +23,7 @@ describe('/users endpoints', () => {
   describe('GET /users', () => {
 
     context('Given no user is logged in', () => {
+      before('seed tables', () => seedTestTables());
       it('returns 401 unauthorized', () => {
         return supertest(app)
           .get('/api/users')
