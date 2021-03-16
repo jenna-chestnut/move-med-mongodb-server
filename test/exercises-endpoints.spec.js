@@ -4,7 +4,7 @@ const supertest = require('supertest');
 const app = require('../src/app');
 const { TEST_ATLAS_URI } = process.env;
 const mongoose = require('mongoose');
-const seedTestTables = require('./Fixtures/seedTestTables');
+const { seedTestTables } = require('./Fixtures/seedTestTables');
 const Content = require('./Fixtures/dbcontent.fixtures');
 const Actions = require('./Fixtures/action.fixtures');
 

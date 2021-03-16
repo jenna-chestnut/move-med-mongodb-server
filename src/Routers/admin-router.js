@@ -1,6 +1,6 @@
 const express = require("express");
 const { requireAuth } = require("../middleware/jwt-auth");
-const UserService = require("../Services/user-service");
+const User = require("../models/user.model");
 
 const adminRouter = express.Router();
 
@@ -19,7 +19,7 @@ adminRouter
   .route('/')
   .get(async (req, res, next) => {
     try {
-      const users = await UserService.getAllUsers(req.app.get('db'));
+      const users = await User.find().lean();
 
       if (!users) return res.status(404).json({error: 'Users not found'});
       else {
@@ -35,10 +35,9 @@ adminRouter
 
 const checkForUser = async (req, res, next) => {
   const { user_id } = req.params;
-  const db = req.app.get('db');
 
   try {
-    const user = await UserService.getUser(db, user_id);
+    const user = await User.findOne({_id: user_id}).lean();
 
     if (!user) return res.status(404).json({
       error: 'user not found'
@@ -59,17 +58,11 @@ adminRouter
     return res.status(200).json(req.foundUser);
   })
   .patch(checkForUser, async (req, res, next) => {
-    const { id } = req.foundUser;
+    const { _id } = req.foundUser;
     const data = req.body;
 
-    if ( parseInt(id) >= 1 && parseInt(id) <= 5 ) {
-      return res.status(400).json({
-        error: { message: 'Demo user details cannot be changed' }
-      });
-    }
-
     try {
-      const updated = await UserService.updateUser(req.app.get('db'), id, data);
+      const updated = await User.updateOne({_id}, (data));
       if (!updated) return res.status(400).json({
         error: 'User not updated'
       });
@@ -79,16 +72,10 @@ adminRouter
     catch (error) { next(error); };
   })
   .delete(checkForUser, async (req, res, next) => {
-    const { id } = req.foundUser;
-
-    if ( parseInt(id) >= 1 && parseInt(id) <= 5 ) {
-      return res.status(400).json({
-        error: { message: 'Demo users cannot be deleted' }
-      });
-    }
+    const { _id } = req.foundUser;
 
     try {
-      const deleted = await UserService.deleteUser(req.app.get('db'), id);
+      const deleted = await User.deleteOne({_id});
       if (!deleted) return res.status(400).json({
         error: 'User not deleted'
       });

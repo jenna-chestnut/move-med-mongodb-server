@@ -45,4 +45,13 @@ const seedTestTables = () => {
   });
 };
 
-module.exports = seedTestTables;
+const clearTables = () => {
+  toSeed.forEach(el => {
+    el.model.deleteMany({});
+  });
+};
+
+module.exports = {
+  seedTestTables,
+  clearTables
+};
