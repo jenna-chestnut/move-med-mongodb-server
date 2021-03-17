@@ -6,14 +6,13 @@ const UserExercise = require('../../src/models/user-exercise.model');
 const Comment = require('../../src/models/comment.model');
 const bcrypt = require('bcryptjs');
 const { makeFixtures } = require('./dbcontent.fixtures');
+
 const {
   users,
   comments,
   exercises,
   user_exercises
 } = makeFixtures();
-
-mongoose.connect(process.env.TEST_ATLAS_URI, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
 
 const toSeed = [
   { name: 'Exercises', model: Exercise,  data: exercises },
@@ -26,7 +25,10 @@ const toSeed = [
   { name: 'Comments', model: Comment, data: comments }
 ];
 
-const seedTestTables = () => {
+const seedTestTables = (url) => {
+
+  mongoose.connect(url, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+
   toSeed.forEach(el => {
 
     el.model.deleteMany({}, function(err, removed) {
@@ -45,13 +47,6 @@ const seedTestTables = () => {
   });
 };
 
-const clearTables = () => {
-  toSeed.forEach(el => {
-    el.model.deleteMany({});
-  });
-};
-
 module.exports = {
-  seedTestTables,
-  clearTables
+  seedTestTables
 };

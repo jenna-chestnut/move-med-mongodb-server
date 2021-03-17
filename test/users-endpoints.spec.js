@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 const supertest = require('supertest');
 const app = require('../src/app');
-const { TEST_ATLAS_URI } = process.env;
+const { TEST_ATLAS_URI_users } = process.env;
 const mongoose = require('mongoose');
 const { seedTestTables } = require('./Fixtures/seedTestTables');
 const Content = require('./Fixtures/dbcontent.fixtures');
@@ -9,12 +9,14 @@ const Actions = require('./Fixtures/action.fixtures');
 
 describe('/users endpoints', () => {
   before('connect to db', () => {
-    mongoose.connect(TEST_ATLAS_URI, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+    mongoose.connect(TEST_ATLAS_URI_users, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
     const { connection } = mongoose;
     connection.once('open', () => {
       console.log('MongoDB database connected successfully');
     });
   });
+
+  before('seed tables', () => seedTestTables(TEST_ATLAS_URI_users));
 
   after('disconnect from db', () => mongoose.connection.close());
 
@@ -23,7 +25,6 @@ describe('/users endpoints', () => {
   describe('GET /users', () => {
 
     context('Given no user is logged in', () => {
-      before('seed tables', () => seedTestTables());
       it('returns 401 unauthorized', () => {
         return supertest(app)
           .get('/api/users')
@@ -40,7 +41,7 @@ describe('/users endpoints', () => {
       });
 
       it('returns 200 and all users if user is admin', () => {
-        before('seed tables', () => seedTestTables());
+        before('seed tables', () => seedTestTables(TEST_ATLAS_URI_users));
 
         return supertest(app)
           .get('/api/users')
@@ -58,7 +59,7 @@ describe('/users endpoints', () => {
     const user = testUsers[2];
 
     context('Given no user is logged in', () => {
-      before('seed tables', () => seedTestTables());
+      before('seed tables', () => seedTestTables(TEST_ATLAS_URI_users));
       it('returns 401 unauthorized', () => {
         return supertest(app)
           .get(`/api/users/${user._id}`)
@@ -114,7 +115,7 @@ describe('/users endpoints', () => {
   describe('DELETE /users', () => {
 
     it('responds 204 and deletes user from system', () => {
-      before('seed tables', () => seedTestTables());
+      before('seed tables', () => seedTestTables(TEST_ATLAS_URI_users));
       const toDelete = testUsers[3];
 
       return supertest(app)

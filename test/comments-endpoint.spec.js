@@ -1,20 +1,24 @@
 /* eslint-disable no-undef */
 const supertest = require('supertest');
 const app = require('../src/app');
-const { TEST_ATLAS_URI } = process.env;
+const { TEST_ATLAS_URI_comments } = process.env;
 const mongoose = require('mongoose');
-const { seedTestTables, clearTables } = require('./Fixtures/seedTestTables');
+const { seedTestTables } = require('./Fixtures/seedTestTables');
 const Content = require('./Fixtures/dbcontent.fixtures');
 const Actions = require('./Fixtures/action.fixtures');
 
 describe('/comments endpoints', () => {
   before('connect to db', () => {
-    mongoose.connect(TEST_ATLAS_URI, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+    mongoose.connect(TEST_ATLAS_URI_comments, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
     const { connection } = mongoose;
     connection.once('open', () => {
       console.log('MongoDB database connected successfully');
     });
   });
+
+  before('seed tables', () => seedTestTables(TEST_ATLAS_URI_comments));
+
+  beforeEach(done => setTimeout(done, 800));
   
   after('disconnect from db', () => mongoose.connection.close());
 
@@ -26,7 +30,6 @@ describe('/comments endpoints', () => {
 
     context('Given an invalid user_ex_id', () => {
       it('responds with 404 not found if invalid id', () => {
-        before('seed tables', () => seedTestTables());
         return supertest(app).get('/api/comments/0000')
           .set('Authorization', Actions.makeAuthHeader(testUsers[0]))
           .expect(404);
@@ -75,7 +78,7 @@ describe('/comments endpoints', () => {
     const badUser = testUsers[2];
 
     it('responds with 201 and adds comment is user owns exercise', () => {
-      before('seed tables', () => seedTestTables());
+      before('seed tables', () => seedTestTables(TEST_ATLAS_URI_comments));
       return supertest(app)
         .post(`/api/comments/${userEx._id}`)
         .set('Authorization', Actions.makeAuthHeader(user))
@@ -119,7 +122,7 @@ describe('/comments endpoints', () => {
     const badUser = testUsers[2];
 
     it('responds with 404 not found if invalid id', () => {
-      before('seed tables', () => seedTestTables());
+      before('seed tables', () => seedTestTables(TEST_ATLAS_URI_comments));
 
       return supertest(app).patch('/api/comments/0000')
         .send(newData)
@@ -153,7 +156,7 @@ describe('/comments endpoints', () => {
     const badUser = testUsers[2];
 
     it('responds with 404 if invalid comment link', () => {
-      before('seed tables', () => seedTestTables());
+      before('seed tables', () => seedTestTables(TEST_ATLAS_URI_comments));
       return supertest(app).delete('/api/comments/00000')
         .set('Authorization', Actions.makeAuthHeader(user))
         .expect(404);

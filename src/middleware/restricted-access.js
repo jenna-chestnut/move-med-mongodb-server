@@ -7,7 +7,7 @@ function checkRestrictedAccess(req, res, next) {
   if (!user.is_admin && !user.is_provider) {
     return res.status(401).json({
       error: { 
-        message: `Unauthorized request`
+        message: 'Unauthorized request'
       }
     });
   }

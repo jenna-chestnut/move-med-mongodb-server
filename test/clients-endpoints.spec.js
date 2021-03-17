@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 const supertest = require('supertest');
 const app = require('../src/app');
-const { TEST_ATLAS_URI } = process.env;
+const { TEST_ATLAS_URI_clients_clientmgmt } = process.env;
 const mongoose = require('mongoose');
 const { seedTestTables } = require('./Fixtures/seedTestTables');
 const Content = require('./Fixtures/dbcontent.fixtures');
@@ -9,7 +9,7 @@ const Actions = require('./Fixtures/action.fixtures');
 
 describe('/clients endpoints', () => {
   before('connect to db', () => {
-    mongoose.connect(TEST_ATLAS_URI, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+    mongoose.connect(TEST_ATLAS_URI_clients_clientmgmt, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
     const { connection } = mongoose;
     connection.once('open', () => {
       console.log('MongoDB database connected successfully');
@@ -33,7 +33,7 @@ describe('/clients endpoints', () => {
 
     context('Given user is logged in', () => {
       it('returns 401 if user is not admin/provider', () => {
-        before('seed tables', () => seedTestTables());
+        before('seed tables', () => seedTestTables(TEST_ATLAS_URI_clients_clientmgmt));
         return supertest(app)
           .get('/api/clients')
           .set('Authorization', Actions.makeAuthHeader(testUsers[1]))
@@ -47,7 +47,7 @@ describe('/clients endpoints', () => {
           .expect(200)
           .then(res => {
             expect(res.body).to.be.an('array');
-            expect(res.body.length).to.eql(clientList.length + 1);
+            expect(res.body.length).to.eql(clientList.length);
           });
       });
     });

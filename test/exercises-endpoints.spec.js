@@ -2,7 +2,7 @@
 const { expect } = require('chai');
 const supertest = require('supertest');
 const app = require('../src/app');
-const { TEST_ATLAS_URI } = process.env;
+const { TEST_ATLAS_URI_exercises_auth } = process.env;
 const mongoose = require('mongoose');
 const { seedTestTables } = require('./Fixtures/seedTestTables');
 const Content = require('./Fixtures/dbcontent.fixtures');
@@ -11,7 +11,7 @@ const Actions = require('./Fixtures/action.fixtures');
 describe('/exercises endpoints', () => {
   
   before('connect to db', () => {
-    mongoose.connect(TEST_ATLAS_URI, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+    mongoose.connect(TEST_ATLAS_URI_exercises_auth, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
     const { connection } = mongoose;
     connection.once('open', () => {
       console.log('MongoDB database connected successfully');
@@ -35,7 +35,7 @@ describe('/exercises endpoints', () => {
       const testUsers = Content.makeUsersArr();
 
       it('returns 200 and all base exercises with categories arrays if user is admin/provider', () => {
-        before('seed tables', () => seedTestTables());
+        before('seed tables', () => seedTestTables(TEST_ATLAS_URI_exercises_auth));
 
         return supertest(app)
           .get('/api/exercises')
@@ -69,7 +69,7 @@ describe('/exercises endpoints', () => {
   });
 
   describe('POST /exercises', () => {
-    before('seed tables', () => seedTestTables());
+    before('seed tables', () => seedTestTables(TEST_ATLAS_URI_exercises_auth));
     const testUsers = Content.makeUsersArr();
     let newExercise = Actions.makeNewExercise();
 
@@ -139,7 +139,7 @@ describe('/exercises endpoints', () => {
    
     describe('GET /exercises/:id', () => {
       it('returns 401 unauthorized when not logged in', () => {
-        before('seed tables', () => seedTestTables());
+        before('seed tables', () => seedTestTables(TEST_ATLAS_URI_exercises_auth));
 
         return supertest(app)
           .get(`/api/exercises/${ex.id}`)
@@ -179,7 +179,7 @@ describe('/exercises endpoints', () => {
       const newData = { exercise_name : 'NEW NAME' };
 
       it('returns 404 not found if exercise does not exist', () => {
-        before('seed tables', () => seedTestTables());
+        before('seed tables', () => seedTestTables(TEST_ATLAS_URI_exercises_auth));
         return supertest(app)
           .patch('/api/exercises/0000')
           .send(newData)

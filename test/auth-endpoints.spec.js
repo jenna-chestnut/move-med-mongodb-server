@@ -1,7 +1,7 @@
 // /* eslint-disable no-undef */
 const supertest = require('supertest');
 const app = require('../src/app');
-const { TEST_ATLAS_URI } = process.env;
+const { TEST_ATLAS_URI_exercises_auth } = process.env;
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const { seedTestTables } = require('./fixtures/seedTestTables');
@@ -12,12 +12,14 @@ const Content = require('./fixtures/dbcontent.fixtures');
 
 describe('/login and /register endpoints', () => {
   before('connect to db', () => {
-    mongoose.connect(TEST_ATLAS_URI, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
+    mongoose.connect(TEST_ATLAS_URI_exercises_auth, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
     const { connection } = mongoose;
     connection.once('open', () => {
       console.log('MongoDB database connected successfully');
     });
   });
+
+  before('seed tables', () => seedTestTables(TEST_ATLAS_URI_exercises_auth));
 
   after('disconnect from db', () => mongoose.connection.close());
 
@@ -25,7 +27,6 @@ describe('/login and /register endpoints', () => {
 
   describe('POST api/auth/login Endpoint', () =>{
     const requiredFields = ['user_name', 'password'];
-    before('seed tables', () => seedTestTables());
 
     requiredFields.forEach(field => {
       const loginAttemptBody = {
@@ -91,9 +92,7 @@ describe('/login and /register endpoints', () => {
     const requiredFields = ['user_name', 'full_name', 'password', 'is_admin', 'is_provider'];
 
 
-    describe('api/auth/register validation', async () => {
-      await before('seed tables', () => seedTestTables());
-
+    describe('api/auth/register validation', () => {
       requiredFields.forEach(field => {
         const regAttemptBody = Actions.makeNewUser();
     
@@ -174,8 +173,7 @@ describe('/login and /register endpoints', () => {
     });
   
     describe('successful registration', () => {
-      it('when valid credentials, creates new user in users_table, then responds 201', async () => {
-        await before('seed tables', () => seedTestTables());
+      it('when valid credentials, creates new user in users_table, then responds 201', () => {
         const newUser = Actions.makeNewUser();
   
         return supertest(app)
@@ -184,11 +182,11 @@ describe('/login and /register endpoints', () => {
           .send(newUser)
           .expect(201)
           .then(() => {
-          return supertest(app)
-            .post('/api/auth/login')
-            .send(newUser)
-            .expect(200);
-        });
+            return supertest(app)
+              .post('/api/auth/login')
+              .send(newUser)
+              .expect(200);
+          });
       });
     });
   });
