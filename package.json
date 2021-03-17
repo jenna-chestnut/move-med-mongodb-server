@@ -8,12 +8,8 @@
     "watch": "npm t -- --watch",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "migrate": "postgrator --config postgrator-config.js",
-    "migrate:test": "env NODE_ENV=test npm run migrate",
-    "migrate:production": "heroku run npm run migrate",
-    "predeploy": "npm audit && npm run migrate:production",
-    "deploy": "git push heroku main",
-    "seed:production": "cat ./seeds/seed.tables.sql | heroku pg:psql"
+    "predeploy": "npm audit",
+    "deploy": "git push heroku main"
   },
   "keywords": [],
   "engines": {
