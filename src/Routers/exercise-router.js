@@ -19,7 +19,7 @@ exercisesRouter
     
     try {
     let exercises = is_admin || is_provider 
-    ? await Exercise.find() 
+    ? await Exercise.find().lean() 
     : await UserExercise.find({user_id : _id}).populate('exercise').lean();
 
     if (!exercises) return res.status(404).json({ error: 'Exercise not found'});
@@ -76,7 +76,7 @@ exercisesRouter
 
     try {
       let exercise = is_admin || is_provider 
-      ? await Exercise.findOne({_id: ex_id}) 
+      ? await Exercise.findOne({_id: ex_id}).lean() 
       : await UserExercise.findOne({user_id : _id, exercise: ex_id}).populate('exercise').lean();
 
       if (!exercise) return res.status(404).json({error: 'Exercise not found'});
@@ -101,7 +101,7 @@ exercisesRouter
         error: 'Exercise not found'
       });
       else {
-        const updatedEx = await Exercise.findOne({_id: ex_id});
+        const updatedEx = await Exercise.findOne({_id: ex_id}).lean();
         return res.status(201).json(updatedEx);
       }
     }
@@ -111,7 +111,7 @@ exercisesRouter
     const { ex_id } = req.params;
 
     try {
-      const ex = await Exercise.findOne({_id: ex_id});
+      const ex = await Exercise.findOne({_id: ex_id}).lean();
       if (!ex) return res.status(404).json({
         error: 'Exercise not found'
       });
