@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "predeploy": "npm audit",
-    "deploy": "git push heroku main"
+    "deploy": "git push heroku main",
+    "seed:production": "node ./seeds/seedExercises.js && node ./seeds/seedUsers.js && node ./seeds/seedUserExercises.js && node ./seeds/seedComments.js"
   },
   "keywords": [],
   "engines": {

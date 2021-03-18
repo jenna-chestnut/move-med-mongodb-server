@@ -29,7 +29,7 @@ app.use('/api/users', adminRouter);
 app.use('/api/client-mgmt', clientMgmtRouter);
 
 app.get('/', (req, res, next) => {
-  res.status(200).send('Hello, MoveMed! To use, check out the docs for this API in the MoveMed API repo for jenna-chestnut at GitHub.');
+  res.status(200).send('Hello, MoveMed! To use, check out the docs for this API in the MoveMed MongoDB API repo for jenna-chestnut at GitHub.');
 });
 
 app.use(function errorHandler(error, req, res, next) {
