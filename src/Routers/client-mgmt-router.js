@@ -99,4 +99,42 @@ clientMgmtRouter
     catch (error) { next(error); };
   });
 
+  const checkUser = (req, res, next) => {
+    const { user_id } = req.params;
+
+    if (user_id.length !== 12 && user_id.length !==24) 
+    return res.status(404).json({ error: ' User not found' });
+
+    next();
+  }
+
+  clientMgmtRouter
+  .route('/goal/:user_id')
+  .post(checkUser, async (req, res, next) => {
+    const { goal } = req.body;
+
+    try {
+      const updated = await User.updateMany({_id: user_id}, ({goal})).lean();
+      
+      if (!updated) return res.status(404).json({
+        error: 'Goal not added'
+      });
+      else return res.status(201).json(updated);
+    }
+    catch (error) { next(error); };
+  })
+  .patch(checkUser, async (req, res, next) => {
+    const {goal} = req.body;
+ 
+      try {
+        const updated = await User.updateMany({_id: user_id}, ({goal})).lean();
+        
+        if (!updated) return res.status(404).json({
+          error: 'Goal not updated'
+        });
+        else return res.status(201).json(updated);
+    }
+    catch (error) { next(error); };
+  })
+
 module.exports = clientMgmtRouter;

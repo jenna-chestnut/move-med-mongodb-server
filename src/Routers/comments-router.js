@@ -55,6 +55,7 @@ commentsRouter
     const { _id } = req.userEx;
     const { comment_text } = req.body;
     const newComment = { user_exercise: _id, user_id: req.user._id, comment_text };
+    console.log(newComment)
 
     for (const [key, value] of Object.entries(newComment)) {
       if (value == null ) {
@@ -67,7 +68,7 @@ commentsRouter
     try {
       const newC = await Comment.insertMany(newComment).then(([c]) => c);
 
-      if (!newC.n) return res.status(400).json({
+      if (!newC) return res.status(400).json({
         error: 'Comment not created! Please try again.'
       });
       else return res.status(201).json(newC);
@@ -88,7 +89,8 @@ const checkUserComment = async (req, res, next) => {
     if (!comment) return res.status(404).json({
       error: 'Comment not found'
     });
-    else if ( !is_admin && !is_provider && !(comment.user_id == _id)) 
+    
+    else if ( !is_admin && !is_provider && !(comment.user_id.equals(_id))) 
       return res.status(401).json({
         error: 'Unauthorized request'
       });

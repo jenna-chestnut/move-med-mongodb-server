@@ -7,7 +7,7 @@ const { seedTestTables } = require('./Fixtures/seedTestTables');
 const Content = require('./Fixtures/dbcontent.fixtures');
 const Actions = require('./Fixtures/action.fixtures');
 
-describe('/comments endpoints', () => {
+describe.only('/comments endpoints', () => {
   before('connect to db', () => {
     mongoose.connect(TEST_ATLAS_URI_comments, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
     const { connection } = mongoose;
@@ -77,7 +77,7 @@ describe('/comments endpoints', () => {
     const user = testUsers[1];
     const badUser = testUsers[2];
 
-    it('responds with 201 and adds comment is user owns exercise', () => {
+    it('responds with 201 and adds comment if user owns exercise', () => {
       before('seed tables', () => seedTestTables(TEST_ATLAS_URI_comments));
       return supertest(app)
         .post(`/api/comments/${userEx._id}`)
