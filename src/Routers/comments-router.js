@@ -41,7 +41,7 @@ commentsRouter
     const { _id } = req.userEx;
 
     try {
-      const comments = await Comment.find({user_exercise: _id}).lean();
+      const comments = await Comment.find({user_exercise: _id}).populate('user', 'full_name').lean();
 
       const cleanComments = await comments.map(el => {
         return {...el, comment_text: xss(el.comment_text)};
@@ -67,7 +67,7 @@ commentsRouter
     try {
       const newC = await Comment.insertMany(newComment).then(([c]) => c);
 
-      if (!newC) return res.status(400).json({
+      if (!newC.n) return res.status(400).json({
         error: 'Comment not created! Please try again.'
       });
       else return res.status(201).json(newC);
