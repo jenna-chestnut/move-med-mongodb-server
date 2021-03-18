@@ -3,6 +3,7 @@ const checkRestrictedAccess = require("../middleware/restricted-access");
 const { requireAuth } = require("../middleware/jwt-auth");
 const xss = require("xss");
 const UserExercise = require("../models/user-exercise.model");
+const User = require("../models/user.model");
 
 const clientMgmtRouter = express.Router();
 
@@ -113,9 +114,10 @@ clientMgmtRouter
   .post(checkUser, async (req, res, next) => {
     const { goal } = req.body;
     const { user_id } = req.params;
+    const goalData = {goal};
 
     try {
-      const updated = await User.updateMany({_id: user_id}, ({goal})).lean();
+      const updated = await User.updateMany({_id: user_id}, (goalData)).lean();
       
       if (!updated) return res.status(404).json({
         error: 'Goal not added'
@@ -127,9 +129,10 @@ clientMgmtRouter
   .patch(checkUser, async (req, res, next) => {
     const {goal} = req.body;
     const { user_id } = req.params;
+    const goalData = {goal};
  
       try {
-        const updated = await User.updateMany({_id: user_id}, ({goal})).lean();
+        const updated = await User.updateMany({_id: user_id}, (goalData)).lean();
         
         if (!updated) return res.status(404).json({
           error: 'Goal not updated'
