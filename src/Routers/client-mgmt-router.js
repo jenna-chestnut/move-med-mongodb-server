@@ -112,6 +112,7 @@ clientMgmtRouter
   .route('/goal/:user_id')
   .post(checkUser, async (req, res, next) => {
     const { goal } = req.body;
+    const { user_id } = req.params;
 
     try {
       const updated = await User.updateMany({_id: user_id}, ({goal})).lean();
@@ -125,6 +126,7 @@ clientMgmtRouter
   })
   .patch(checkUser, async (req, res, next) => {
     const {goal} = req.body;
+    const { user_id } = req.params;
  
       try {
         const updated = await User.updateMany({_id: user_id}, ({goal})).lean();
