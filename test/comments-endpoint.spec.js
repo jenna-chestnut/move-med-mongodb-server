@@ -7,7 +7,7 @@ const { seedTestTables } = require('./Fixtures/seedTestTables');
 const Content = require('./Fixtures/dbcontent.fixtures');
 const Actions = require('./Fixtures/action.fixtures');
 
-describe.only('/comments endpoints', () => {
+describe('/comments endpoints', () => {
   before('connect to db', () => {
     mongoose.connect(TEST_ATLAS_URI_comments, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true });
     const { connection } = mongoose;

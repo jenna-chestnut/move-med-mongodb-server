@@ -43,7 +43,7 @@ const makeNewComment = () => {
 
 const makeNewUserExercise = () => {
   return {
-    exercise_id: ex[1]._id, 
+    exercise: ex[1]._id, 
     user_id: users[3]._id,
     frequency: 3,
     duration: 'day', 

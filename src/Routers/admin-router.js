@@ -63,11 +63,14 @@ adminRouter
 
     try {
       const updated = await User.updateOne({_id}, (data));
-      if (!updated) return res.status(400).json({
+      if (!updated.n) return res.status(400).json({
         error: 'User not updated'
       });
 
-      else return res.status(201).send('Content updated!');
+      else {
+        const user = await User.findOne({_id}).lean();
+        return res.status(201).json(user);
+      }
     }
     catch (error) { next(error); };
   })

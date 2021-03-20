@@ -15,9 +15,9 @@ clientMgmtRouter
   .route('/exercises/:client_id')
   .post(async (req, res, next) => {
     const { user_id, frequency,
-      duration, add_note } = req.body;
+      duration, add_note, exercise } = req.body;
     const newExercise = { user_id, frequency,
-      duration, add_note };
+      duration, add_note, exercise };
 
     for (const [key, value] of Object.entries(newExercise)) {
       if (value == null) {
@@ -127,17 +127,21 @@ clientMgmtRouter
     catch (error) { next(error); };
   })
   .patch(checkUser, async (req, res, next) => {
-    const {goal} = req.body;
+    const {user_goal} = req.body;
     const { user_id } = req.params;
-    const goalData = {goal};
+    const goalData = {user_goal};
  
       try {
         const updated = await User.updateMany({_id: user_id}, (goalData)).lean();
         
-        if (!updated) return res.status(404).json({
+        if (!updated.n) return res.status(404).json({
           error: 'Goal not updated'
         });
-        else return res.status(201).json(updated);
+        else {
+          const newGoal = await User.find({_id: user_id}).distinct('user_goal').then(([g]) => g)
+
+          return res.status(201).json(newGoal);
+        }
     }
     catch (error) { next(error); };
   })
