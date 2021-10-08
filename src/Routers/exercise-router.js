@@ -22,9 +22,11 @@ exercisesRouter
     ? await Exercise.find().lean() 
     : await UserExercise.find({user_id : _id}).populate('exercise').lean();
 
+    console.log(exercises)
+
     if (!exercises) return res.status(404).json({ error: 'Exercise not found'});
 
-    if (!is_admin || !is_provider) {
+    if (!is_admin && !is_provider) {
       const goal = await User.find({_id}).distinct('user_goal').then(([g]) => g);
       exercises = exercises.map(el => {
         const {imgurl, videourl, exercise_name} = el.exercise;
