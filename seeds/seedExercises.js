@@ -38,7 +38,7 @@ const exerciseData = [
   {
     _id: '604158dc5c22d4d6406cc697',
     exercise_name: 'Elbow Extension', 
-    imgurl: 'https://tinyurl.com/y3lqkavl', 
+    imgurl: 'https://tinyurl.com/jzmu8v78', 
     videourl: 'ry8lUjavfr8'
   },
   {
